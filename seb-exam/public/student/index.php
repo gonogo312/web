@@ -64,7 +64,14 @@ ob_start();
                             <?= $exam['access_code'] ? '<span class="badge badge-info">Required</span>' : 'None' ?>
                         </td>
                         <td>
-                            <a href="exam_take.php?exam_id=<?= (int)$exam['id'] ?>" class="btn btn-sm btn-primary">Take Exam</a>
+                            <div class="btn-group">
+                                <a href="exam_take.php?exam_id=<?= (int)$exam['id'] ?>" class="btn btn-sm btn-primary">Take Exam</a>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline btn-copy-link"
+                                        data-url="<?= e(BASE_URL . '/student/exam_take.php?exam_id=' . (int)$exam['id']) ?>">
+                                    Copy Link
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -94,7 +101,14 @@ ob_start();
                         <td><?= e($game['title']) ?></td>
                         <td><?= e(mb_substr($game['description'] ?? '', 0, 100)) ?></td>
                         <td>
-                            <a href="game_play.php?game_id=<?= (int)$game['id'] ?>" class="btn btn-sm btn-success">Play</a>
+                            <div class="btn-group">
+                                <a href="game_play.php?game_id=<?= (int)$game['id'] ?>" class="btn btn-sm btn-success">Play</a>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline btn-copy-link"
+                                        data-url="<?= e(BASE_URL . '/student/game_play.php?game_id=' . (int)$game['id']) ?>">
+                                    Copy Link
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -145,6 +159,7 @@ ob_start();
 <?php
 $bodyContent = ob_get_clean();
 include __DIR__ . '/../../app/views/layout.php';
+
 
 
 

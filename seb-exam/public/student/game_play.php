@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../app/lib/csrf.php';
 require_once __DIR__ . '/../../app/lib/validation.php';
 require_once __DIR__ . '/../../app/models/Game.php';
 require_once __DIR__ . '/../../app/models/GameNode.php';
+require_once __DIR__ . '/../../app/models/GameAttempt.php';
 init_session();
 require_role('student');
 
@@ -14,6 +15,65 @@ if (!$gameId) { http_response_code(404); die('Game not found.'); }
 $game = Game::findById($gameId);
 if (!$game || !$game['is_published']) {
     http_response_code(404); die('Game not found or not published.');
+}
+
+$error = '';
+
+
+if ($game['access_code'] && $_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_SESSION['game_access_' . $gameId])) {
+    $pageTitle = 'Enter Access Code';
+    ob_start();
+    ?>
+    <div class="card" style="max-width:500px;margin:2rem auto">
+        <h2>Access Code Required</h2>
+        <p>This escape room requires an access code to start.</p>
+        <form method="POST" action="">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="check_code">
+            <div class="form-group">
+                <label for="access_code">Access Code</label>
+                <input type="text" id="access_code" name="access_code" required autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+    <?php
+    $bodyContent = ob_get_clean();
+    include __DIR__ . '/../../app/views/layout.php';
+    exit;
+}
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check_code') {
+    csrf_check();
+    $code = trim($_POST['access_code'] ?? '');
+    if ($code === $game['access_code']) {
+        $_SESSION['game_access_' . $gameId] = true;
+        header('Location: game_play.php?game_id=' . $gameId);
+        exit;
+    } else {
+        $error = 'Invalid access code.';
+        $pageTitle = 'Enter Access Code';
+        ob_start();
+        ?>
+        <div class="card" style="max-width:500px;margin:2rem auto">
+            <h2>Access Code Required</h2>
+            <div class="alert alert-error"><?= e($error) ?></div>
+            <form method="POST" action="">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="check_code">
+                <div class="form-group">
+                    <label for="access_code">Access Code</label>
+                    <input type="text" id="access_code" name="access_code" required autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+        <?php
+        $bodyContent = ob_get_clean();
+        include __DIR__ . '/../../app/views/layout.php';
+        exit;
+    }
 }
 
 
@@ -30,6 +90,16 @@ $node = GameNode::findById($nodeId);
 if (!$node || $node['game_id'] != $gameId) {
     die('Invalid node.');
 }
+
+$studentId = current_user_id();
+$attempt = GameAttempt::getActiveAttempt($studentId, $gameId);
+if (!$attempt) {
+    $attemptId = GameAttempt::start($studentId, $gameId);
+    $attempt = GameAttempt::findById($attemptId);
+}
+
+$choiceId = validate_int($_GET['choice_id'] ?? 0, 1);
+GameAttempt::logChoice($attempt['id'], $nodeId, $choiceId ?: null);
 
 $choices = Game::getChoicesForNode($nodeId);
 
@@ -51,6 +121,9 @@ ob_start();
         <div class="alert alert-success">
             <strong>Congratulations!</strong> You have reached the end of this escape room!
         </div>
+        <?php if (!$attempt['is_completed']): ?>
+            <?php GameAttempt::complete($attempt['id']); ?>
+        <?php endif; ?>
         <a href="<?= e(BASE_URL) ?>/student/" class="btn btn-primary">Back to Dashboard</a>
         <a href="game_play.php?game_id=<?= $gameId ?>" class="btn btn-outline">Play Again</a>
     <?php elseif (!empty($choices)): ?>
@@ -58,7 +131,7 @@ ob_start();
         <div style="margin-top:0.75rem">
             <?php foreach ($choices as $choice): ?>
                 <?php if ($choice['target_node_id']): ?>
-                    <a href="game_play.php?game_id=<?= $gameId ?>&node_id=<?= (int)$choice['target_node_id'] ?>"
+                    <a href="game_play.php?game_id=<?= $gameId ?>&node_id=<?= (int)$choice['target_node_id'] ?>&choice_id=<?= (int)$choice['id'] ?>"
                        class="btn btn-primary" style="margin-bottom:0.5rem; display:block; text-align:left;">
                         &rarr; <?= e($choice['choice_text']) ?>
                     </a>
@@ -77,6 +150,7 @@ ob_start();
 <?php
 $bodyContent = ob_get_clean();
 include __DIR__ . '/../../app/views/layout.php';
+
 
 
 

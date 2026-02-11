@@ -133,14 +133,15 @@ ob_start();
                 <?php foreach ($options as $j => $opt): ?>
                     <div class="form-check">
                         <input type="radio" name="answers[<?= (int)$q['id'] ?>]"
-                               value="<?= e($opt) ?>" id="q<?= $q['id'] ?>_<?= $j ?>">
+                               value="<?= e($opt) ?>" id="q<?= $q['id'] ?>_<?= $j ?>"
+                               <?= $j === 0 ? 'required' : '' ?>>
                         <label for="q<?= $q['id'] ?>_<?= $j ?>"><?= e($opt) ?></label>
                     </div>
                 <?php endforeach; ?>
 
             <?php elseif ($q['type'] === 'tf'): ?>
                 <div class="form-check">
-                    <input type="radio" name="answers[<?= (int)$q['id'] ?>]" value="true" id="q<?= $q['id'] ?>_t">
+                    <input type="radio" name="answers[<?= (int)$q['id'] ?>]" value="true" id="q<?= $q['id'] ?>_t" required>
                     <label for="q<?= $q['id'] ?>_t">True</label>
                 </div>
                 <div class="form-check">
@@ -150,7 +151,7 @@ ob_start();
 
             <?php elseif ($q['type'] === 'short'): ?>
                 <div class="form-group">
-                    <input type="text" name="answers[<?= (int)$q['id'] ?>]" placeholder="Your answer">
+                    <input type="text" name="answers[<?= (int)$q['id'] ?>]" placeholder="Your answer" required>
                 </div>
             <?php endif; ?>
         </div>
@@ -161,6 +162,7 @@ ob_start();
 <?php
 $bodyContent = ob_get_clean();
 include __DIR__ . '/../../app/views/layout.php';
+
 
 
 

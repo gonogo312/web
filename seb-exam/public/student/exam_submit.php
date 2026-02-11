@@ -28,6 +28,19 @@ $exam = Exam::findById($attempt['exam_id']);
 $questions = Exam::getQuestions($attempt['exam_id']);
 $answers = $_POST['answers'] ?? [];
 
+$missingAnswers = [];
+foreach ($questions as $q) {
+    $studentAnswer = trim($answers[$q['id']] ?? '');
+    if ($studentAnswer === '') {
+        $missingAnswers[] = $q['id'];
+    }
+}
+if (!empty($missingAnswers)) {
+    $_SESSION['flash_error'] = 'Please answer all questions before submitting.';
+    header('Location: exam_take.php?exam_id=' . $attempt['exam_id']);
+    exit;
+}
+
 $totalScore = 0;
 
 foreach ($questions as $q) {
@@ -54,6 +67,7 @@ Attempt::submit($attemptId, $totalScore);
 $_SESSION['flash_success'] = 'Exam submitted successfully!';
 header('Location: exam_result.php?attempt_id=' . $attemptId);
 exit;
+
 
 
 

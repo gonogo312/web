@@ -10,6 +10,7 @@
                     <a href="<?= e(BASE_URL) ?>/teacher/">Dashboard</a>
                     <a href="<?= e(BASE_URL) ?>/teacher/exam_list.php">Exams</a>
                     <a href="<?= e(BASE_URL) ?>/teacher/game_list.php">Games</a>
+                    <a href="<?= e(BASE_URL) ?>/teacher/statistics.php">Statistics</a>
                     <a href="<?= e(BASE_URL) ?>/teacher/seb_list.php">SEB Configs</a>
                     <a href="<?= e(BASE_URL) ?>/teacher/prediction.php">Predictions</a>
                 <?php elseif (current_user_role() === 'student'): ?>
@@ -25,6 +26,7 @@
         </nav>
     </div>
 </header>
+
 
 
 

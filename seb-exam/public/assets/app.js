@@ -27,6 +27,52 @@ document.addEventListener('DOMContentLoaded', function () {
     
     
     
+    document.querySelectorAll('.btn-copy-link').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var url = btn.getAttribute('data-url') || '';
+            if (url && url.charAt(0) === '/' && window.location && window.location.origin) {
+                url = window.location.origin + url;
+            }
+            if (!url) return;
+            var done = function () {
+                var original = btn.getAttribute('data-copy-label') || 'Copy Link';
+                btn.textContent = 'Copied!';
+                setTimeout(function () { btn.textContent = original; }, 1500);
+            };
+            var fallback = function () {
+                var temp = document.createElement('textarea');
+                temp.value = url;
+                temp.setAttribute('readonly', '');
+                temp.style.position = 'fixed';
+                temp.style.top = '-1000px';
+                temp.style.left = '-1000px';
+                document.body.appendChild(temp);
+                temp.focus();
+                temp.select();
+                var ok = false;
+                try {
+                    ok = document.execCommand('copy');
+                } catch (e) {
+                    ok = false;
+                }
+                document.body.removeChild(temp);
+                if (ok) {
+                    done();
+                } else {
+                    window.prompt('Copy this link:', url);
+                }
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(url).then(done).catch(fallback);
+            } else {
+                fallback();
+            }
+        });
+    });
+
+    
+    
+    
     var questionContainer = document.getElementById('questions-container');
     var addQuestionBtn = document.getElementById('add-question-btn');
 
@@ -206,7 +252,25 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
     }
 
+    
+    
+    
+    var activitySelect = document.getElementById('stats-activity-type');
+    var examFilter = document.getElementById('stats-exam-filter');
+    var gameFilter = document.getElementById('stats-game-filter');
+    function syncStatsFilters() {
+        if (!activitySelect) return;
+        var val = activitySelect.value;
+        if (examFilter) examFilter.style.display = (val === 'exam' || val === 'all') ? 'block' : 'none';
+        if (gameFilter) gameFilter.style.display = (val === 'game' || val === 'all') ? 'block' : 'none';
+    }
+    if (activitySelect) {
+        activitySelect.addEventListener('change', syncStatsFilters);
+        syncStatsFilters();
+    }
+
 });
+
 
 
 

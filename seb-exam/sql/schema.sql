@@ -143,6 +143,32 @@ CREATE TABLE IF NOT EXISTS `game_choices` (
 ) ENGINE=InnoDB;
 
 
+CREATE TABLE IF NOT EXISTS `game_attempts` (
+    `id`           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id`   INT UNSIGNED NOT NULL,
+    `game_id`      INT UNSIGNED NOT NULL,
+    `started_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `finished_at`  DATETIME     DEFAULT NULL,
+    `is_completed` TINYINT(1)   NOT NULL DEFAULT 0,
+    FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`game_id`)    REFERENCES `games`(`id`) ON DELETE CASCADE,
+    INDEX `idx_game_attempts_student_game` (`student_id`, `game_id`)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS `game_choice_logs` (
+    `id`              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `game_attempt_id` INT UNSIGNED NOT NULL,
+    `node_id`         INT UNSIGNED NOT NULL,
+    `choice_id`       INT UNSIGNED DEFAULT NULL,
+    `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`game_attempt_id`) REFERENCES `game_attempts`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`node_id`) REFERENCES `game_nodes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`choice_id`) REFERENCES `game_choices`(`id`) ON DELETE SET NULL,
+    INDEX `idx_game_choice_attempt` (`game_attempt_id`)
+) ENGINE=InnoDB;
+
+
 
 
 CREATE TABLE IF NOT EXISTS `seb_configs` (
@@ -170,6 +196,7 @@ CREATE TABLE IF NOT EXISTS `api_tokens` (
     `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
 
 
 

@@ -27,9 +27,14 @@ if (!isset($pageTitle)) $pageTitle = APP_NAME;
 </main>
 
 <?php include __DIR__ . '/footer.php'; ?>
-<script src="<?= e(BASE_URL) ?>/assets/app.js"></script>
+<?php
+$appJsPath = __DIR__ . '/../../public/assets/app.js';
+$appJsVer = is_file($appJsPath) ? filemtime($appJsPath) : time();
+?>
+<script src="<?= e(BASE_URL) ?>/assets/app.js?v=<?= (int)$appJsVer ?>"></script>
 </body>
 </html>
+
 
 
 

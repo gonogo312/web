@@ -52,6 +52,11 @@ ob_start();
                     <td>
                         <div class="btn-group">
                             <a href="game_edit.php?id=<?= (int)$game['id'] ?>" class="btn btn-sm btn-outline">Edit</a>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline btn-copy-link"
+                                    data-url="<?= e(BASE_URL . '/student/game_play.php?game_id=' . (int)$game['id']) ?>">
+                                Copy Link
+                            </button>
                             <a href="game_export.php?id=<?= (int)$game['id'] ?>" class="btn btn-sm btn-success">Export JSON</a>
                             <form method="POST" action="game_delete.php" style="display:inline">
                                 <?= csrf_field() ?>
@@ -69,6 +74,7 @@ ob_start();
 <?php
 $bodyContent = ob_get_clean();
 include __DIR__ . '/../../app/views/layout.php';
+
 
 
 

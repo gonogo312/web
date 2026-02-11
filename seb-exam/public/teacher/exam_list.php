@@ -53,6 +53,11 @@ ob_start();
                     <td>
                         <div class="btn-group">
                             <a href="exam_edit.php?id=<?= (int)$exam['id'] ?>" class="btn btn-sm btn-outline">Edit</a>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline btn-copy-link"
+                                    data-url="<?= e(BASE_URL . '/student/exam_take.php?exam_id=' . (int)$exam['id']) ?>">
+                                Copy Link
+                            </button>
                             <form method="POST" action="exam_delete.php" style="display:inline">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="id" value="<?= (int)$exam['id'] ?>">
@@ -69,6 +74,7 @@ ob_start();
 <?php
 $bodyContent = ob_get_clean();
 include __DIR__ . '/../../app/views/layout.php';
+
 
 
 
