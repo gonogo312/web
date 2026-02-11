@@ -1,0 +1,28 @@
+# Root .htaccess - Security headers and directory listing prevention
+Options -Indexes
+
+# Deny access to app/ and storage/ directories from web
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to /app/ directory
+    RewriteRule ^app/ - [F,L]
+
+    # Block direct access to /storage/ directory
+    RewriteRule ^storage/ - [F,L]
+
+    # Block direct access to /sql/ directory
+    RewriteRule ^sql/ - [F,L]
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+
+
+
