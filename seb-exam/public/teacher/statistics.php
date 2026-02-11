@@ -3,16 +3,62 @@
 require_once __DIR__ . '/../../app/lib/auth.php';
 require_once __DIR__ . '/../../app/lib/csrf.php';
 require_once __DIR__ . '/../../app/lib/validation.php';
+require_once __DIR__ . '/../../app/lib/plantuml.php';
 require_once __DIR__ . '/../../app/models/User.php';
 require_once __DIR__ . '/../../app/models/Exam.php';
 require_once __DIR__ . '/../../app/models/Game.php';
 require_once __DIR__ . '/../../app/models/Attempt.php';
 require_once __DIR__ . '/../../app/models/GameAttempt.php';
+use function Jawira\PlantUml\encodep;
 init_session();
 require_role('teacher');
 
 $tid = current_user_id();
 $pdo = db();
+
+function plantuml_sanitize(string $text, int $maxLen = 60): string {
+    $text = trim(preg_replace('/\s+/', ' ', $text));
+    $text = str_replace([';', '@'], [',', ''], $text);
+    if (mb_strlen($text) > $maxLen) {
+        $text = mb_substr($text, 0, $maxLen - 3) . '...';
+    }
+    return $text;
+}
+
+function build_exam_uml(string $examTitle, string $studentName, array $answers): string {
+    $lines = [];
+    $lines[] = '@startuml';
+    $lines[] = 'title Exam: ' . plantuml_sanitize($examTitle, 80) . ' - ' . plantuml_sanitize($studentName, 60);
+    $lines[] = 'participant Student';
+    $lines[] = 'participant "Exam" as Exam';
+    $lines[] = 'Student -> Exam: Start';
+    foreach ($answers as $i => $a) {
+        $qLabel = 'Q' . ($i + 1);
+        $ans = plantuml_sanitize($a['student_answer'] ?: 'no answer', 70);
+        $correct = !empty($a['is_correct']) ? 'Correct' : 'Incorrect';
+        $lines[] = 'Exam --> Student: ' . $qLabel;
+        $lines[] = 'note right: ' . $correct . '\\nAns: ' . $ans;
+    }
+    $lines[] = 'Student -> Exam: Submit';
+    $lines[] = '@enduml';
+    return implode("\n", $lines);
+}
+
+function build_game_uml(string $gameTitle, string $studentName, array $logs): string {
+    $lines = [];
+    $lines[] = '@startuml';
+    $lines[] = 'title Escape Room: ' . plantuml_sanitize($gameTitle, 80) . ' - ' . plantuml_sanitize($studentName, 60);
+    $lines[] = 'start';
+    foreach ($logs as $log) {
+        $node = plantuml_sanitize($log['node_title'] ?? 'Node', 70);
+        $choice = plantuml_sanitize($log['choice_text'] ?: 'start', 70);
+        $lines[] = ':' . $node . ';';
+        $lines[] = ':Choice - ' . $choice . ';';
+    }
+    $lines[] = 'stop';
+    $lines[] = '@enduml';
+    return implode("\n", $lines);
+}
 
 $students = User::getStudents();
 $exams = Exam::findByTeacher($tid);
@@ -125,38 +171,20 @@ ob_start();
                             <?= e($attempt['finished_at'] ?? 'N/A') ?>
                         </div>
                     </div>
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Question</th>
-                                    <th>Student Answer</th>
-                                    <th>Correct Answer</th>
-                                    <th>Points</th>
-                                    <th>Result</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($answers as $i => $a): ?>
-                                <tr>
-                                    <td><?= $i + 1 ?></td>
-                                    <td><?= e($a['question_text']) ?></td>
-                                    <td><?= e($a['student_answer'] ?: '(no answer)') ?></td>
-                                    <td><?= e($a['correct_answer']) ?></td>
-                                    <td><?= e($a['points_awarded']) ?> / <?= e($a['points']) ?></td>
-                                    <td>
-                                        <?php if ($a['is_correct']): ?>
-                                            <span class="badge badge-success">Correct</span>
-                                        <?php else: ?>
-                                            <span class="badge badge-danger">Incorrect</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                    <?php if (!empty($answers)): ?>
+                        <?php
+                        $uml = build_exam_uml($attempt['exam_title'], $attempt['student_name'] ?: $attempt['username'], $answers);
+                        $encoded = encodep($uml);
+                        $umlUrl = 'http://www.plantuml.com/plantuml/png/' . $encoded;
+                        ?>
+                        <div class="mb-1">
+                            <a href="<?= e($umlUrl) ?>" target="_blank" class="btn btn-sm btn-outline">Open Diagram</a>
+                        </div>
+                        <img src="<?= e($umlUrl) ?>" alt="Exam path diagram"
+                             style="max-width:100%; height:auto; border:1px solid var(--color-border); border-radius:6px;">
+                    <?php else: ?>
+                        <p class="text-muted">No answers available for this attempt.</p>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
@@ -181,28 +209,20 @@ ob_start();
                             <?= e($attempt['finished_at'] ?? 'N/A') ?>
                         </div>
                     </div>
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Node</th>
-                                    <th>Choice</th>
-                                    <th>Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($logs as $i => $log): ?>
-                                <tr>
-                                    <td><?= $i + 1 ?></td>
-                                    <td><?= e($log['node_title']) ?></td>
-                                    <td><?= e($log['choice_text'] ?: '(start)') ?></td>
-                                    <td><?= e($log['created_at']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                    <?php if (!empty($logs)): ?>
+                        <?php
+                        $uml = build_game_uml($attempt['game_title'], $attempt['student_name'] ?: $attempt['username'], $logs);
+                        $encoded = encodep($uml);
+                        $umlUrl = 'http://www.plantuml.com/plantuml/png/' . $encoded;
+                        ?>
+                        <div class="mb-1">
+                            <a href="<?= e($umlUrl) ?>" target="_blank" class="btn btn-sm btn-outline">Open Diagram</a>
+                        </div>
+                        <img src="<?= e($umlUrl) ?>" alt="Escape room path diagram"
+                             style="max-width:100%; height:auto; border:1px solid var(--color-border); border-radius:6px;">
+                    <?php else: ?>
+                        <p class="text-muted">No path data available for this attempt.</p>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
@@ -212,6 +232,7 @@ ob_start();
 <?php
 $bodyContent = ob_get_clean();
 include __DIR__ . '/../../app/views/layout.php';
+
 
 
 
